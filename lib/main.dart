@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -15,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Recaptcha(),
+      home: const Recaptcha(),
     );
   }
 }
@@ -24,31 +26,41 @@ class Recaptcha extends StatelessWidget {
   const Recaptcha({Key? key}) : super(key: key);
   final stringLength = 6;
 
-  String randomStringGenerator(int length) {
-    /// Generates a random alphabetic character length of 6(default)
-    List<int> codeUnits = List<int>.generate(length, (_) {
-      return Random().nextInt(26) + 65;
-    });
-    return String.fromCharCodes(codeUnits);
+// Covert a string to a random capital and small cases
+  String getRandomCase(String text) => Random().nextBool() ? text.toUpperCase() : text.toLowerCase();
+
+  /// Generates a random alphabetic character with random letter cases with length of 6(default)
+  String captchaTextWithRandomCase(int length) {
+    Random random = Random();
+    List<int> codeUnits = List<int>.generate(length, (_) => random.nextInt(26) + 65);
+    return String.fromCharCodes(codeUnits).splitMapJoin(
+      RegExp(r'[A-Z]'),
+      onMatch: (Match m) => getRandomCase(m[0]!),
+      onNonMatch: (String s) => s,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: SizedBox(
-          width: 300,
-          height: 100,
-          child: Transform.rotate(
-            angle: 3,
-            child: CustomPaint(
-              painter: TextCustomerPainter(randomStringGenerator(6)),
-            ),
-          ),
+        child: CustomPaint(
+          painter: TextCustomerPainter(captchaTextWithRandomCase(6)),
         ),
       ),
     );
   }
+}
+
+/// Return random font name
+String getRandomFontName() {
+  List<String> fontNames = <String>[
+    'captchaFonts',
+    'Norefund',
+    'Dompleng',
+    'Custom',
+  ];
+  return fontNames[Random().nextInt(fontNames.length)];
 }
 
 class TextCustomerPainter extends CustomPainter {
@@ -58,12 +70,13 @@ class TextCustomerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    List<String> letters = text.split("");
+    List<String> letters = text.split('');
 
     for (var i = 0; i < letters.length; i++) {
       final textStyle = TextStyle(
         color: Colors.black,
-        fontSize: Random().nextInt(20) + 10,
+        fontFamily: getRandomFontName(),
+        fontSize: Random().nextInt(20) + 30,
       );
       final textSpan = TextSpan(
         text: letters[i],
@@ -87,6 +100,6 @@ class TextCustomerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    throw false;
+    return true;
   }
 }
