@@ -17,56 +17,115 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const Recaptcha(),
+      home: Recaptcha(),
     );
   }
 }
 
-class Recaptcha extends StatelessWidget {
-  const Recaptcha({Key? key}) : super(key: key);
+class Recaptcha extends StatefulWidget {
+  Recaptcha({Key? key}) : super(key: key);
+
+  @override
+  _RecaptchaState createState() => _RecaptchaState();
+}
+
+class _RecaptchaState extends State<Recaptcha> {
   final stringLength = 6;
+  final random = Random();
+  late String solutionString;
+  late List<Color> colors;
+  bool solved = false;
 
-// Covert a string to a random capital and small cases
-  String getRandomCase(String text) => Random().nextBool() ? text.toUpperCase() : text.toLowerCase();
+  List<Color> generateBackgroundColors() {
+    return List<Color>.generate(
+      random.nextInt(100),
+      (index) {
+        return Color((random.nextDouble() * 0xFFFFFF).toInt()).withOpacity(
+          random.nextDouble(),
+        );
+      },
+    );
+  }
 
-  /// Generates a random alphabetic character with random letter cases with length of 6(default)
-  String captchaTextWithRandomCase(int length) {
-    Random random = Random();
-    List<int> codeUnits = List<int>.generate(length, (_) => random.nextInt(26) + 65);
-    return String.fromCharCodes(codeUnits).splitMapJoin(
+  @override
+  void initState() {
+    List<int> codeUnits = List<int>.generate(6, (_) => random.nextInt(26) + 65);
+    solutionString = String.fromCharCodes(codeUnits).splitMapJoin(
       RegExp(r'[A-Z]'),
       onMatch: (Match m) => getRandomCase(m[0]!),
       onNonMatch: (String s) => s,
     );
+    colors = generateBackgroundColors();
+    super.initState();
   }
+
+  String getRandomCase(String text) =>
+      Random().nextBool() ? text.toUpperCase() : text.toLowerCase();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: CustomPaint(
-          painter: TextCustomerPainter(captchaTextWithRandomCase(6)),
+        child: Column(
+          children: [
+            RepaintBoundary(
+              child: SizedBox(
+                width: 300,
+                height: 100,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: colors),
+                      ),
+                    ),
+                    CustomPaint(
+                      willChange: false,
+                      painter: TextCustomerPainter(solutionString),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            RepaintBoundary(
+              child: TextField(
+                onChanged: (value) {
+                  setState(() => solved = value == solutionString);
+                },
+              ),
+            ),
+            SizedBox(
+              width: 100,
+              height: 100,
+              child: solved
+                  ? Container(
+                      color: Colors.green,
+                    )
+                  : Container(color: Colors.red),
+            )
+          ],
         ),
       ),
     );
   }
 }
 
-/// Return random font name
-String getRandomFontName() {
-  List<String> fontNames = <String>[
-    'captchaFonts',
-    'Norefund',
-    'Dompleng',
-    'Custom',
-  ];
-  return fontNames[Random().nextInt(fontNames.length)];
-}
-
 class TextCustomerPainter extends CustomPainter {
   final String text;
 
   TextCustomerPainter(this.text);
+
+  /// Return random font name
+  String getRandomFontName() {
+    List<String> fontNames = <String>[
+      'captchaFonts',
+      'Norefund',
+      'Dompleng',
+      'Custom',
+    ];
+    return fontNames[Random().nextInt(fontNames.length)];
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -93,13 +152,13 @@ class TextCustomerPainter extends CustomPainter {
 
       final xCenter = (size.width - textPainter.width) / 2;
       final yCenter = (size.height - textPainter.height) / 2;
-      final offset = Offset(xCenter + i * 30, yCenter);
+      final offset = Offset(xCenter - 100 + i * 30, yCenter);
       textPainter.paint(canvas, offset);
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+    return false;
   }
 }
