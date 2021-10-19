@@ -17,104 +17,27 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Recaptcha(),
+      home: const Recaptcha(),
     );
   }
 }
 
 class Recaptcha extends StatefulWidget {
-  Recaptcha({Key? key}) : super(key: key);
+  const Recaptcha({Key? key}) : super(key: key);
 
   @override
   _RecaptchaState createState() => _RecaptchaState();
 }
 
 class _RecaptchaState extends State<Recaptcha> {
-  final stringLength = 6;
-  final random = Random();
+  final int stringLength = 6;
+  final Random random = Random();
   late String solutionString;
   late List<Color> colors;
+  late String font;
   bool solved = false;
 
-  List<Color> generateBackgroundColors() {
-    return List<Color>.generate(
-      random.nextInt(100),
-      (index) {
-        return Color((random.nextDouble() * 0xFFFFFF).toInt()).withOpacity(
-          random.nextDouble(),
-        );
-      },
-    );
-  }
-
-  @override
-  void initState() {
-    List<int> codeUnits = List<int>.generate(6, (_) => random.nextInt(26) + 65);
-    solutionString = String.fromCharCodes(codeUnits).splitMapJoin(
-      RegExp(r'[A-Z]'),
-      onMatch: (Match m) => getRandomCase(m[0]!),
-      onNonMatch: (String s) => s,
-    );
-    colors = generateBackgroundColors();
-    super.initState();
-  }
-
-  String getRandomCase(String text) =>
-      Random().nextBool() ? text.toUpperCase() : text.toLowerCase();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          children: [
-            RepaintBoundary(
-              child: SizedBox(
-                width: 300,
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: colors),
-                      ),
-                    ),
-                    CustomPaint(
-                      willChange: false,
-                      painter: TextCustomerPainter(solutionString),
-                    )
-                  ],
-                ),
-              ),
-            ),
-            RepaintBoundary(
-              child: TextField(
-                onChanged: (value) {
-                  setState(() => solved = value == solutionString);
-                },
-              ),
-            ),
-            SizedBox(
-              width: 100,
-              height: 100,
-              child: solved
-                  ? Container(
-                      color: Colors.green,
-                    )
-                  : Container(color: Colors.red),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TextCustomerPainter extends CustomPainter {
-  final String text;
-
-  TextCustomerPainter(this.text);
+  late TextEditingController controller;
 
   /// Return random font name
   String getRandomFontName() {
@@ -127,21 +50,151 @@ class TextCustomerPainter extends CustomPainter {
     return fontNames[Random().nextInt(fontNames.length)];
   }
 
+  List<Color> generateBackgroundColors() {
+    return List<Color>.generate(
+      random.nextInt(100),
+      (int index) {
+        return Color((random.nextDouble() * 0xFFFFFF).toInt()).withOpacity(
+          random.nextDouble(),
+        );
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    controller = TextEditingController();
+    List<int> codeUnits = List<int>.generate(6, (_) => random.nextInt(26) + 65);
+    solutionString = String.fromCharCodes(codeUnits).splitMapJoin(
+      RegExp(r'[A-Z]'),
+      onMatch: (Match m) => Random().nextBool() ? m[0]!.toUpperCase() : m[0]!.toLowerCase(),
+      onNonMatch: (String s) => s,
+    );
+    font = getRandomFontName();
+    colors = generateBackgroundColors();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            RepaintBoundary(
+              child: SizedBox(
+                width: 300,
+                height: 100,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: colors),
+                      ),
+                    ),
+                    CustomPaint(
+                      willChange: false,
+                      painter: TextCustomerPainter(
+                        solutionString,
+                        getRandomFontName(),
+                        Random().nextInt(20) + 30,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 300,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  suffixIcon: controller.text.isNotEmpty
+                      ? Icon(
+                          solved ? Icons.check : Icons.close,
+                          color: solved ? Colors.green : Colors.red,
+                        )
+                      : null,
+                  hintText: 'Enter captcha',
+                  border: OutlineInputBorder(
+                    borderRadius: const BorderRadius.all(Radius.circular(10.0)),
+                    borderSide: BorderSide(width: 4.0, color: solved ? Colors.green : Colors.red),
+                  ),
+                ),
+                onChanged: (_) {
+                  setState(() => solved = controller.text == solutionString);
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                IconButton(
+                  focusColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  tooltip: 'change font',
+                  onPressed: () {
+                    // TODO(@md-weber): change font
+                  },
+                  icon: const Icon(
+                    Icons.font_download_outlined,
+                    size: 25,
+                  ),
+                ),
+                IconButton(
+                  focusColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  tooltip: 'new captcha',
+                  onPressed: () {
+                    // TODO(@md-weber): new captcha
+                  },
+                  icon: const Icon(
+                    Icons.refresh_outlined,
+                    size: 25,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TextCustomerPainter extends CustomPainter {
+  final String text;
+  final String fontFamily;
+  final double fontSize;
+
+  TextCustomerPainter(this.text, this.fontFamily, this.fontSize);
+
   @override
   void paint(Canvas canvas, Size size) {
     List<String> letters = text.split('');
 
-    for (var i = 0; i < letters.length; i++) {
-      final textStyle = TextStyle(
+    for (int i = 0; i < letters.length; i++) {
+      TextStyle textStyle = TextStyle(
         color: Colors.black,
-        fontFamily: getRandomFontName(),
-        fontSize: Random().nextInt(20) + 30,
+        fontFamily: fontFamily,
+        fontSize: fontSize,
       );
-      final textSpan = TextSpan(
+      TextSpan textSpan = TextSpan(
         text: letters[i],
         style: textStyle,
       );
-      final textPainter = TextPainter(
+      TextPainter textPainter = TextPainter(
         text: textSpan,
         textDirection: TextDirection.ltr,
       );
@@ -150,9 +203,9 @@ class TextCustomerPainter extends CustomPainter {
         maxWidth: size.width,
       );
 
-      final xCenter = (size.width - textPainter.width) / 2;
-      final yCenter = (size.height - textPainter.height) / 2;
-      final offset = Offset(xCenter - 100 + i * 30, yCenter);
+      double xCenter = (size.width - textPainter.width) / 2;
+      double yCenter = (size.height - textPainter.height) / 2;
+      Offset offset = Offset(xCenter - 100 + i * 30, yCenter);
       textPainter.paint(canvas, offset);
     }
   }
